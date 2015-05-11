@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- geotweeter 2
+ geotweeter 3
 								 A QGIS plugin
  Twitter collector for qgis
 							 -------------------
