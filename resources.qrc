@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/geotweet" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
