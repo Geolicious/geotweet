@@ -41,6 +41,19 @@ class geotweetDialog(QtGui.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        try:
+            import tweepy
+            print "module tweepy found"
+            #QtGui.QMessageBox.about(self, "tweepy found", "Your tweepy installation was found. cool!")
+        except ImportError:
+            QtGui.QMessageBox.about(self, "must install tweepy!", "we will download tweepy to your temp folder but you must install it by yourself")
+            print "module tweepy not found but will be downloaded and installe"
+            tempfolder = tempfile.gettempdir()
+            urllib.urlretrieve('https://github.com/tweepy/tweepy/archive/master.zip', tempfolder + os.sep + 'master.zip')
+            print "tweepy was downloaded to your temp folder"
+            with zipfile.ZipFile(tempfolder + os.sep + 'master.zip', "r") as z:
+                z.extractall(tempfolder + os.sep)
+            print "tweepy was unzipped to ~Temp/tweepy-master/"
         #for i in allLayers:
         #    self.layer_extent.addItem(i.name())
         #nr_tweets = self.nr_tweets.valueChanged.connect(self.get_tweets)
