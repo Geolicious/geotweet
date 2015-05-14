@@ -198,14 +198,19 @@ class geotweet:
         #clear layer list prior calling the dialog
         self.dlg.layer_extent.clear()
         #adding current layers to the dlg
-        index = 0
+        index = 1
+        self.dlg.layer_extent.addItem('None')
+        self.dlg.layer_extent.setItemData(0,'None_id')
+        self.dlg.layer_extent.setItemText(0,'None')
         for i in allLayers: 
             if i.type() == 0 or i.type() == 1: 
                 self.dlg.layer_extent.addItem(i.name())      
                 self.dlg.layer_extent.setItemData(index,i.id())
                 self.dlg.layer_extent.setItemText(index,i.name())
                 index = index +1
-
+        self.dlg.precision.clear()
+        self.dlg.precision.addItem('user location')
+        self.dlg.precision.addItem('tweet about place')
         self.dlg.show
         # Run the dialog event loop
         result = self.dlg.exec_()
@@ -215,9 +220,9 @@ class geotweet:
             # substitute with your code.
             #get nr of tweets
             tweets = self.dlg.nr_tweets.value()
-            keywords = self.dlg.keywords.text()
+            keywords = self.dlg.keywords.text().split()
+            precision = self.dlg.precision.currentText()
             print str(tweets) + " : # of tweets"
-            print "keywords: " + keywords
             layerid = self.dlg.layer_extent.itemData(self.dlg.layer_extent.currentIndex())
             #layer = self.dlg.layer_extent.currentText()[1]
             print "using extent of layer " + str(layerid) + " as bounding box"
@@ -230,10 +235,10 @@ class geotweet:
                 raise Exception("Tweepy module not installed correctly")
             #create keys for tweepy:
             if self.dlg.consumer_key.text() == '':
-                access_token = "xxx"
-                access_token_secret = "xxx"
-                consumer_key = "xxx"
-                consumer_secret = "xxx"
+                access_token = "x"
+                access_token_secret = "x"
+                consumer_key = "x"
+                consumer_secret = "x"
                 key = tweepy.OAuthHandler(consumer_key, consumer_secret)
                 key.set_access_token(access_token, access_token_secret)
                 m = self.dlg.nr_tweets.value()
@@ -257,32 +262,49 @@ class geotweet:
                         'localization':status.user.location,
                         'time_zone':status.user.time_zone,
                         'time':status.timestamp_ms}
-                    self.n = self.n+1
+                    #we will only care about tweets with geo
+
+                    if self.output[status.id]['geo']!=None and precision == 'user location':
+                        print "geo found"
+                        self.n = self.n+1
+                    if self.output[status.id]['place'] != None and self.output[status.id]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'tweet about place':
+                        print "place found"
+                        self.n = self.n+1
                     if self.n < self.m: 
+                        #print self.n
                         return True
                     else:
-                        print 'tweets = '+str(self.n)
                         return False
 
-            GEOBOX_WORLD = [-180,-90,180,90]
-            #getting the extent:
-            for i in allLayers:
-                if i.id() == layerid:
-                    extent = i.extent()
             
-            crsSrc = i.crs()
-            crsDest = QgsCoordinateReferenceSystem(4326)
-            xform = QgsCoordinateTransform(crsSrc, crsDest)
-            extentn = xform.transform(extent)
-            print extentn.xMinimum()
-            GEOBOX_SPECIFIC = [extentn.xMinimum(), extentn.yMinimum(), extentn.xMaximum(), extentn.yMaximum()]
+            #getting the extent:
+            if layerid != 'None_id':
+                for i in allLayers:
+                    if i.id() == layerid:
+                        extent = i.extent()
+                        crsSrc = i.crs()
+                        crsDest = QgsCoordinateReferenceSystem(4326)
+                        xform = QgsCoordinateTransform(crsSrc, crsDest)
+                        extentn = xform.transform(extent)
+                        print extentn.xMinimum()
+                        geobox = [extentn.xMinimum(), extentn.yMinimum(), extentn.xMaximum(), extentn.yMaximum()]
+            else:
+                geobox = [-180,-90,180,90]
+            print geobox
             #GEOBOX_SPECIFIC = [5.0770, 47.2982, 15.0403, 54.9039]
             tweepy.streaming.Stream(key, stream2lib())
             stream = tweepy.streaming.Stream(key, stream2lib())
-            stream.filter(locations=GEOBOX_SPECIFIC)
+            #if self.dlg.keywords.text()=="":
+            #     stream.filter(locations=geobox)
+            # else:
+            #     print "keywords for tweets:"
+            #     print  keywords
+            #     stream.filter(keywords)
+            #     stream.filter(track=keywords)
+            stream.filter(locations=geobox, track=keywords)
             tweetdic = stream2lib().output
             print tweetdic
-
+            #lets create the shapefile --> maybe define a proper function for this!!!
             vl = QgsVectorLayer("Point", "temporary_twitter_results", "memory")
             pr = vl.dataProvider()
 
@@ -294,14 +316,36 @@ class geotweet:
             for tweet in tweetdic:
                 
                 fet = QgsFeature()
-                fet.setGeometry(QgsGeometry.fromPoint(QgsPoint(tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0],tweetdic[tweet]['place'].bounding_box.coordinates[0][1][1] )))
-                tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
+                #case one: one is interested in the tweeter location:
+                if tweetdic[tweet]['geo'] != None and precision == 'user location':
+                    print "tweet at location " + str(tweetdic[tweet]['geo']['coordinates']) + "found"
+                    fet.setGeometry(QgsGeometry.fromPoint(QgsPoint(tweetdic[tweet]['geo']['coordinates'][1],tweetdic[tweet]['geo']['coordinates'][0] )))
+                    tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
                 #print tweettime
                 #print tweetdic[tweet][str(datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S'))]
-                fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],tweettime])
+                    fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],tweettime])
                 #fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],'test'])
 
-                pr.addFeatures([fet])
+                    pr.addFeatures([fet])
+                # case two : we want the place...
+                if tweetdic[tweet]['place'] != None and tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'tweet about place':
+                    print "center at " 
+                    #LL UL UR LR
+                    rect = QgsRectangle(tweetdic[tweet]['place'].bounding_box.coordinates[0][0][0],
+                        tweetdic[tweet]['place'].bounding_box.coordinates[0][0][1],
+                        tweetdic[tweet]['place'].bounding_box.coordinates[0][2][0],
+                        tweetdic[tweet]['place'].bounding_box.coordinates[0][2][1])
+                    print rect.center()
+                    print "tweet at location " + str(tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0]) + "found"
+                    fet.setGeometry(QgsGeometry.fromPoint(QgsPoint(tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0],tweetdic[tweet]['place'].bounding_box.coordinates[0][1][1] )))
+                    tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
+                #print tweettime
+                #print tweetdic[tweet][str(datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S'))]
+                    fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],tweettime])
+                #fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],'test'])
+
+                    pr.addFeatures([fet])
+                    #self.dlg.precision.addItem('tweet about place')
             # commit to stop editing the layer
             vl.commitChanges()
             # update layer's extent when new features have been added
