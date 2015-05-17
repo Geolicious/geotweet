@@ -313,19 +313,21 @@ class geotweet:
                         geobox = [extentn.xMinimum(), extentn.yMinimum(), extentn.xMaximum(), extentn.yMaximum()]
             #GEOBOX_SPECIFIC = [5.0770, 47.2982, 15.0403, 54.9039]
             stream = tweepy.streaming.Stream(key, stream2lib())
-            if layerid != 'None_id' and keywords == "":
+            if layerid != 'None_id' and len(keywords) == 0:
                 print "tweets in this area: " + str(geobox)
                 stream.filter(locations=geobox)
-            if layerid == 'None_id' and keywords != "": 
+            if layerid == 'None_id' and len(keywords) != 0: 
                 print "tweets with keywords: " + str(keywords)
                 stream.filter(track=keywords)
-            else:
+            if layerid == 'None_id' and len(keywords) == 0:
+                print "collect worldwide tweets"
                 stream.filter(locations=[-180,-90,180,90])
 
             #if self.dlg.keywords.text()=="":
             #     stream.filter(locations=geobox)
             # else:
             #     print "keywords for tweets:"
+
             #     print  keywords
             #     stream.filter(keywords)
             #     stream.filter(track=keywords)

@@ -25,6 +25,7 @@ The whole collection of tweets freezes the QGIS application at the moment when t
 You can also select to store the gathered stream. This txt file will be stored in your temp folder by default.
 
 ## Version_changes
+*2015/05/17 0.8.1 fix for location filter, minor changes in metadata.
 *2015/05/17 0.8c added some more information about prerequisites, add messagebar for blank tokens
 *2015/05/17 0.8 first release
 
