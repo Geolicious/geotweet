@@ -245,7 +245,7 @@ class geotweet:
             except ImportError:
                 raise Exception("Tweepy module not installed correctly")
             #paste keys for tweepy if you like:
-            if self.dlg.consumer_key.text() == '':
+            if self.dlg.consumer_key.text() == '' or self.dlg.consumer_key_secret.text() == '' or  self.dlg.access_token.text()=='' or self.dlg.access_token_secret.text()=='':
                 access_token = "x"
                 access_token_secret = "x"
                 consumer_key = "x"
@@ -253,6 +253,9 @@ class geotweet:
                 key = tweepy.OAuthHandler(consumer_key, consumer_secret)
                 key.set_access_token(access_token, access_token_secret)
                 print "used predefined key"
+                progressMessageBar2 = qgis.utils.iface.messageBar().createMessage("No Twitter API keys provided in the gui! Taken from geotweet.py file / source!")
+                qgis.utils.iface.messageBar().pushWidget(progressMessageBar2, qgis.utils.iface.messageBar().WARNING)
+
             else:
                 key = tweepy.OAuthHandler(self.dlg.consumer_key.text(), self.dlg.consumer_key_secret.text())
                 key.set_access_token(self.dlg.access_token.text(), self.dlg.access_token_secret.text())
