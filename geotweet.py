@@ -37,6 +37,9 @@ import tempfile
 import sys, re
 from subprocess import call
 import datetime
+import time
+from PyQt4.QtGui import QProgressBar
+from PyQt4.QtCore import *
 #datetime.datetime.utcfromtimestamp()
 
 class geotweet:
@@ -105,7 +108,7 @@ class geotweet:
         status_tip=None,
         whats_this=None,
         parent=None):
-        """Add a toolbar icon to the toolbar.
+        """Add a toolbar icon to the toiconolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
             path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
@@ -193,15 +196,17 @@ class geotweet:
         """Run method that performs all the real work"""
         # show the dialog
         # read the current project
+        self.dlg.show
         canvas = qgis.utils.iface.mapCanvas()
         allLayers = canvas.layers()
         #clear layer list prior calling the dialog
         self.dlg.layer_extent.clear()
+        self.dlg.output_file.clear()
         #adding current layers to the dlg
-        index = 1
-        self.dlg.layer_extent.addItem('None')
+        index = 1   
+        self.dlg.layer_extent.addItem('None - use keywords!')
         self.dlg.layer_extent.setItemData(0,'None_id')
-        self.dlg.layer_extent.setItemText(0,'None')
+        self.dlg.layer_extent.setItemText(0,'None - use keywords!')
         for i in allLayers: 
             if i.type() == 0 or i.type() == 1: 
                 self.dlg.layer_extent.addItem(i.name())      
@@ -209,9 +214,13 @@ class geotweet:
                 self.dlg.layer_extent.setItemText(index,i.name())
                 index = index +1
         self.dlg.precision.clear()
-        self.dlg.precision.addItem('user location')
-        self.dlg.precision.addItem('tweet about place')
-        self.dlg.show
+        self.dlg.precision.addItem('use user location (slow, accurate)')
+        self.dlg.precision.addItem('use place location (fast, inaccurate)')
+        
+        self.dlg.output_file.addItem('no file of tweets needed')
+        self.dlg.output_file.addItem('file of raw tweets needed')
+
+        
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
@@ -219,10 +228,12 @@ class geotweet:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             #get nr of tweets
-            tweets = self.dlg.nr_tweets.value()
+            
             keywords = self.dlg.keywords.text().split()
             precision = self.dlg.precision.currentText()
-            print str(tweets) + " : # of tweets"
+            fileneeded = self.dlg.output_file.currentText()
+            m = self.dlg.nr_tweets.value()
+            print str(m) + " : # of tweets"
             layerid = self.dlg.layer_extent.itemData(self.dlg.layer_extent.currentIndex())
             #layer = self.dlg.layer_extent.currentText()[1]
             print "using extent of layer " + str(layerid) + " as bounding box"
@@ -233,7 +244,7 @@ class geotweet:
             #QtGui.QMessageBox.about(self, "tweepy found", "Your tweepy installation was found. cool!")
             except ImportError:
                 raise Exception("Tweepy module not installed correctly")
-            #create keys for tweepy:
+            #paste keys for tweepy if you like:
             if self.dlg.consumer_key.text() == '':
                 access_token = "x"
                 access_token_secret = "x"
@@ -241,18 +252,26 @@ class geotweet:
                 consumer_secret = "x"
                 key = tweepy.OAuthHandler(consumer_key, consumer_secret)
                 key.set_access_token(access_token, access_token_secret)
-                m = self.dlg.nr_tweets.value()
                 print "used predefined key"
             else:
                 key = tweepy.OAuthHandler(self.dlg.consumer_key.text(), self.dlg.consumer_key_secret.text())
                 key.set_access_token(self.dlg.access_token.text(), self.dlg.access_token_secret.text())
+            n = 0
+            progressMessageBar = qgis.utils.iface.messageBar().createMessage("collecting tweets" + str(n) +"from " + str(m))
+            progress = QProgressBar()
+            progress.setMaximum(m)
+            progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+            progressMessageBar.layout().addWidget(progress)
+            qgis.utils.iface.messageBar().pushWidget(progressMessageBar, qgis.utils.iface.messageBar().INFO)
             class stream2lib(tweepy.StreamListener):
                 output = {}
+
                 def __init__(self, api=None):
                     api = tweepy.API(key)
                     self.api = api or API()
-                    self.n = 0
+                    self.n = n
                     self.m = m
+                    self.gathered = 0
                 def on_status(self, status):
                     self.output[status.id] = {
                         'tweet':status.text.encode('utf8'),
@@ -263,17 +282,19 @@ class geotweet:
                         'time_zone':status.user.time_zone,
                         'time':status.timestamp_ms}
                     #we will only care about tweets with geo
-
-                    if self.output[status.id]['geo']!=None and precision == 'user location':
-                        print "geo found"
+                    self.gathered += 1
+                    if self.output[status.id]['geo']!=None and precision == 'use user location (slow, accurate)':
+                        progress.setValue(self.n + 1)
                         self.n = self.n+1
-                    if self.output[status.id]['place'] != None and self.output[status.id]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'tweet about place':
-                        print "place found"
+                    if self.output[status.id]['place'] != None and self.output[status.id]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'use place location (fast, inaccurate)':
+                        progress.setValue(self.n + 1)
+                        print self.n
                         self.n = self.n+1
+                    progressMessageBar.setText("tweets gathered: "+ str(self.gathered) + "; geo_enabled/places_enabled: " + str(self.n))
                     if self.n < self.m: 
-                        #print self.n
                         return True
                     else:
+
                         return False
 
             
@@ -286,14 +307,18 @@ class geotweet:
                         crsDest = QgsCoordinateReferenceSystem(4326)
                         xform = QgsCoordinateTransform(crsSrc, crsDest)
                         extentn = xform.transform(extent)
-                        print extentn.xMinimum()
                         geobox = [extentn.xMinimum(), extentn.yMinimum(), extentn.xMaximum(), extentn.yMaximum()]
-            else:
-                geobox = [-180,-90,180,90]
-            print geobox
             #GEOBOX_SPECIFIC = [5.0770, 47.2982, 15.0403, 54.9039]
-            tweepy.streaming.Stream(key, stream2lib())
             stream = tweepy.streaming.Stream(key, stream2lib())
+            if layerid != 'None_id' and keywords == "":
+                print "tweets in this area: " + str(geobox)
+                stream.filter(locations=geobox)
+            if layerid == 'None_id' and keywords != "": 
+                print "tweets with keywords: " + str(keywords)
+                stream.filter(track=keywords)
+            else:
+                stream.filter(locations=[-180,-90,180,90])
+
             #if self.dlg.keywords.text()=="":
             #     stream.filter(locations=geobox)
             # else:
@@ -301,9 +326,20 @@ class geotweet:
             #     print  keywords
             #     stream.filter(keywords)
             #     stream.filter(track=keywords)
-            stream.filter(locations=geobox, track=keywords)
             tweetdic = stream2lib().output
-            print tweetdic
+            if fileneeded != 'no file of tweets needed':
+                import codecs
+                fp = codecs.open(tempfile.gettempdir() + os.sep + "Tweets_" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ".txt", "a", "utf-8")
+                for tweet in tweetdic:
+                    fp.write(str(tweetdic[tweet]) + '\n')
+                fp.close() 
+
+            #save twitter response to file:
+            #tempfolder = tempfile.gettempdir()
+            #with open(tempfolder + os.sep + 'fetched_tweets.txt','w') as tf:
+            #    tf.write(tweetdic)
+            #print tweetdic
+
             #lets create the shapefile --> maybe define a proper function for this!!!
             vl = QgsVectorLayer("Point", "temporary_twitter_results", "memory")
             pr = vl.dataProvider()
@@ -317,7 +353,7 @@ class geotweet:
                 
                 fet = QgsFeature()
                 #case one: one is interested in the tweeter location:
-                if tweetdic[tweet]['geo'] != None and precision == 'user location':
+                if tweetdic[tweet]['geo'] != None and precision == 'use user location (slow, accurate)':
                     print "tweet at location " + str(tweetdic[tweet]['geo']['coordinates']) + "found"
                     fet.setGeometry(QgsGeometry.fromPoint(QgsPoint(tweetdic[tweet]['geo']['coordinates'][1],tweetdic[tweet]['geo']['coordinates'][0] )))
                     tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
@@ -328,7 +364,7 @@ class geotweet:
 
                     pr.addFeatures([fet])
                 # case two : we want the place...
-                if tweetdic[tweet]['place'] != None and tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'tweet about place':
+                if tweetdic[tweet]['place'] != None and tweetdic[tweet]['place'].bounding_box.coordinates[0][1][0] != None and precision == 'use place location (fast, inaccurate)':
                     print "center at " 
                     #LL UL UR LR
                     rect = QgsRectangle(tweetdic[tweet]['place'].bounding_box.coordinates[0][0][0],
@@ -354,6 +390,7 @@ class geotweet:
 
             # add layer to the legend
             QgsMapLayerRegistry.instance().addMapLayer(vl)
+            #qgis.utils.iface.messageBar().clearWidgets()
                 #call("python " + tempfolder + os.sep + "tweepy-master" + os.sep + "setup.py install" )
             #sys_modules = sys.modules.keys()
             #regex=re.compile(".*(tweepy).*")
