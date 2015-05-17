@@ -9,7 +9,8 @@
 [general]
 name=twitter2qgis
 qgisMinimumVersion=2.0
-description=Collects tweets by area or keywords. You need to install <a href="http://tweepy.readthedocs.org/en/v3.2.0/#" target="_blank">tweepy</a> prior usage!
+description=Collects tweets by area or keywords. 
+about=twitter2qgis/geotweet collects tweets and store them in a shapefile. You need to install <a href="http://tweepy.readthedocs.org/en/v3.2.0/#" target="_blank">tweepy</a> prior usage!
 version=0.8
 author=Riccardo Klinger, Geolicious
 email=riccardo.klinger@geolicious.de
