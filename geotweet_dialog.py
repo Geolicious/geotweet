@@ -27,6 +27,9 @@ from PyQt4 import QtGui, uic
 from qgis.core import *
 import qgis.utils
 import tempfile
+import urllib
+import zipfile
+
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geotweet_dialog_base.ui'))
