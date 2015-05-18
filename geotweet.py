@@ -333,7 +333,7 @@ class geotweet:
             #     stream.filter(track=keywords)
             tweetdic = stream2lib().output
             if fileneeded != 'no file of tweets needed':
-                with open(tempfile.gettempdir() + os.sep + "Tweets_" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ".txt", 'w') as f_tweet:
+                with open(tempfile.gettempdir() + os.sep + "Tweets_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + ".txt", 'w') as f_tweet:
                     for tweet in tweetdic:
                         f_tweet.write(str(tweetdic[tweet]) + '\n')
                     f_tweet.close() 
