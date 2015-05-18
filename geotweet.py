@@ -333,11 +333,10 @@ class geotweet:
             #     stream.filter(track=keywords)
             tweetdic = stream2lib().output
             if fileneeded != 'no file of tweets needed':
-                import codecs
-                fp = codecs.open(tempfile.gettempdir() + os.sep + "Tweets_" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ".txt", "a", "utf-8")
-                for tweet in tweetdic:
-                    fp.write(str(tweetdic[tweet]) + '\n')
-                fp.close() 
+                with open(tempfile.gettempdir() + os.sep + "Tweets_" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ".txt", 'w') as f_tweet:
+                    for tweet in tweetdic:
+                        f_tweet.write(str(tweetdic[tweet]) + '\n')
+                    f_tweet.close() 
 
             #save twitter response to file:
             #tempfolder = tempfile.gettempdir()

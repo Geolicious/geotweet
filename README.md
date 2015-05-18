@@ -25,8 +25,9 @@ The whole collection of tweets freezes the QGIS application at the moment when t
 You can also select to store the gathered stream. This txt file will be stored in your temp folder by default.
 
 ## Version_changes
-*2015/05/17 0.8.3 fixed issue with missing dependency urllib and zipfile in case you don't have tweepy installed
-*2015/05/17 0.8.2 fixed issue with missing dependency
+*2015/05/18 0.8.4 fixed issue with writing raw tweets to file under windows
+*2015/05/18 0.8.3 fixed issue with missing dependency urllib and zipfile in case you don't have tweepy installed
+*2015/05/18 0.8.2 fixed issue with missing dependency
 *2015/05/17 0.8.1 fix for location filter, minor changes in metadata.
 *2015/05/17 0.8c added some more information about prerequisites, add messagebar for blank tokens
 *2015/05/17 0.8 first release
