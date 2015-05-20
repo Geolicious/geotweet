@@ -11,7 +11,7 @@ name=twitter2qgis
 qgisMinimumVersion=2.0
 description=Collects tweets by area or keywords. 
 about=twitter2qgis/geotweet collects tweets and store them in a shapefile. You need to install tweepy prior usage and create API keys in your twitter account!
-version=0.8.6
+version=0.8.7
 author=Riccardo Klinger, Geolicious
 email=riccardo.klinger@geolicious.de
 
@@ -20,7 +20,8 @@ email=riccardo.klinger@geolicious.de
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog= 2015/05/18 0.8.6 fixed issue with tweets with no place
+changelog= 2015/05/18 0.8.7 removed unnecessary print line
+	2015/05/18 0.8.6 fixed issue with tweets with no place
 	2015/05/18 0.8.5 fixed issue with writing raw tweets to file under windows --- I hate filename rules!
 	2015/05/18 0.8.4 fixed issue with writing raw tweets to file under windows
 	2015/05/18 0.8.3 fixed issue with missing dependency urllib and zipfile in case you don't have tweepy installed

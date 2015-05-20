@@ -358,7 +358,7 @@ class geotweet:
                 fet = QgsFeature()
                 #case one: one is interested in the tweeter location:
                 if tweetdic[tweet]['geo'] != None and precision == 'use user location (slow, accurate)':
-                    print "tweet at location " + str(tweetdic[tweet]['geo']['coordinates']) + "found"
+                    #print "tweet at location " + str(tweetdic[tweet]['geo']['coordinates']) + "found"
                     fet.setGeometry(QgsGeometry.fromPoint(QgsPoint(tweetdic[tweet]['geo']['coordinates'][1],tweetdic[tweet]['geo']['coordinates'][0] )))
                     tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
                 #print tweettime
