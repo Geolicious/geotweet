@@ -363,7 +363,11 @@ class geotweet:
                     tweettime = datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S:%f')
                 #print tweettime
                 #print tweetdic[tweet][str(datetime.datetime.utcfromtimestamp(float(tweetdic[tweet]['time'][:-3] + "." + tweetdic[tweet]['time'][11:13])).strftime('%Y-%m-%d %H:%M:%S'))]
-                    fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],tweettime])
+                    if tweetdic[tweet]['place'] != None:
+                        fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],tweettime])
+                    else:
+                        fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],"no place given",tweetdic[tweet]['tweet'],tweettime])
+                      
                 #fet.setAttributes([tweetdic[tweet]['user'],tweetdic[tweet]['localization'],tweetdic[tweet]['place'].full_name + ", "+ tweetdic[tweet]['place'].country,tweetdic[tweet]['tweet'],'test'])
 
                     pr.addFeatures([fet])
